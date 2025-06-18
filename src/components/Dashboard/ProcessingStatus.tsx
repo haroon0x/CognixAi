@@ -1,6 +1,6 @@
 import React from 'react';
 import { UploadProgress } from '../../types';
-import { CheckCircle, AlertCircle, Loader } from 'lucide-react';
+import { CheckCircle, AlertCircle, Loader, CheckSquare } from 'lucide-react';
 
 interface ProcessingStatusProps {
   uploads: UploadProgress[];
