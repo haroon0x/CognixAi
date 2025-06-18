@@ -2,10 +2,9 @@ import React, { useState } from 'react';
 import { UploadZone } from '../Upload/UploadZone';
 import { StatsOverview } from '../Dashboard/StatsOverview';
 import { ProcessingStatus } from '../Dashboard/ProcessingStatus';
-import { RecentContent } from '../Dashboard/RecentContent';
-import { QuickActions } from '../Dashboard/QuickActions';
 import { CreatePlanModal } from '../ActionPlan/CreatePlanModal';
 import { ContentItem, ActionPlan, UploadProgress } from '../../types';
+import { Target } from 'lucide-react';
 
 interface DashboardProps {
   contentItems: ContentItem[];
@@ -40,8 +39,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [showCreatePlanModal, setShowCreatePlanModal] = useState(false);
 
   return (
-    <div className="space-y-6">
-      {/* Stats Overview */}
+    <div className="space-y-8">
+      {/* Stats */}
       <StatsOverview 
         contentItems={contentItems} 
         projects={[]} 
@@ -52,36 +51,39 @@ export const Dashboard: React.FC<DashboardProps> = ({
         }}
       />
 
-      {/* Main Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Upload Zone */}
+      {/* Main Content */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Upload */}
+        <div className="lg:col-span-2">
           <UploadZone
             onFileUpload={onFileUpload}
             onTextSubmit={onTextSubmit}
             onYouTubeSubmit={onYouTubeSubmit}
           />
-
-          {/* Recent Content */}
-          <RecentContent items={contentItems.slice(0, 5)} />
         </div>
 
-        {/* Right Column */}
-        <div className="space-y-6">
-          {/* Quick Actions */}
-          <QuickActions
-            contentItems={contentItems}
-            onGenerateActionPlan={() => setShowCreatePlanModal(true)}
-            analytics={analytics}
-          />
-
-          {/* Processing Status */}
+        {/* Status */}
+        <div>
           <ProcessingStatus uploads={uploads} />
         </div>
       </div>
 
-      {/* Create Plan Modal */}
+      {/* Action */}
+      {contentItems.length > 0 && (
+        <div className="bg-white border border-gray-200 rounded-lg p-8 text-center">
+          <Target className="h-8 w-8 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-black mb-2">Create Plan</h3>
+          <p className="text-gray-500 mb-6">Generate action plan from extracted tasks</p>
+          <button
+            onClick={() => setShowCreatePlanModal(true)}
+            className="px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors font-medium"
+          >
+            Generate Plan
+          </button>
+        </div>
+      )}
+
+      {/* Modal */}
       {showCreatePlanModal && (
         <CreatePlanModal
           contentItems={contentItems}

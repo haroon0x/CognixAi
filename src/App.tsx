@@ -77,14 +77,7 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white relative overflow-hidden">
-      {/* Animated Background */}
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
-        <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-emerald-500/3 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '4s' }}></div>
-      </div>
-
+    <div className="min-h-screen bg-gray-50">
       {/* Sidebar */}
       <Sidebar
         currentPage={currentPage}
@@ -94,14 +87,14 @@ function App() {
       />
       
       {/* Main Content */}
-      <div className={`transition-all duration-300 ${sidebarCollapsed ? 'ml-16' : 'ml-64'}`}>
+      <div className={`transition-all duration-200 ${sidebarCollapsed ? 'ml-16' : 'ml-64'}`}>
         <Header
           currentPage={currentPage}
           onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)}
           isProcessing={isProcessing}
         />
         
-        <main className="p-6 relative z-10">
+        <main className="p-8">
           {renderPage()}
         </main>
       </div>
