@@ -41,18 +41,18 @@ export const ActionPlans: React.FC<ActionPlansProps> = ({
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-6">
           <div>
-            <h1 className="text-2xl font-bold text-white">Action Plans</h1>
-            <p className="text-gray-400">AI-generated plans and analytics</p>
+            <h1 className="text-2xl font-bold text-black">Action Plans</h1>
+            <p className="text-gray-700">AI-generated plans and analytics</p>
           </div>
           
           {/* Tab Navigation */}
-          <div className="flex bg-gray-800/30 rounded-xl p-1">
+          <div className="flex bg-white rounded-xl p-1 border border-gray-200">
             <button
               onClick={() => setActiveTab('plans')}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                 activeTab === 'plans'
-                  ? 'bg-blue-500 text-white shadow-lg'
-                  : 'text-gray-400 hover:text-white'
+                  ? 'bg-blue-500 text-white border border-blue-500'
+                  : 'text-gray-700 hover:text-black'
               }`}
             >
               <Target className="h-4 w-4 inline mr-2" />
@@ -62,8 +62,8 @@ export const ActionPlans: React.FC<ActionPlansProps> = ({
               onClick={() => setActiveTab('analytics')}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                 activeTab === 'analytics'
-                  ? 'bg-blue-500 text-white shadow-lg'
-                  : 'text-gray-400 hover:text-white'
+                  ? 'bg-blue-500 text-white border border-blue-500'
+                  : 'text-gray-700 hover:text-black'
               }`}
             >
               <BarChart3 className="h-4 w-4 inline mr-2" />
@@ -87,10 +87,10 @@ export const ActionPlans: React.FC<ActionPlansProps> = ({
       {activeTab === 'plans' ? (
         actionPlans.length === 0 ? (
           /* Empty State */
-          <div className="bg-gray-900/30 backdrop-blur-xl border border-gray-800/50 rounded-2xl p-12 text-center">
-            <Target className="h-16 w-16 text-gray-600 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-white mb-2">No Action Plans Yet</h3>
-            <p className="text-gray-400 mb-6">
+          <div className="bg-white border border-gray-200 rounded-2xl p-12 text-center">
+            <Target className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-black mb-2">No Action Plans Yet</h3>
+            <p className="text-gray-700 mb-6">
               Create your first action plan by setting goals and letting AI generate intelligent steps.
             </p>
             <button
@@ -174,45 +174,45 @@ export const ActionPlans: React.FC<ActionPlansProps> = ({
         <div className="space-y-6">
           {/* Analytics Overview */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-gray-900/30 backdrop-blur-xl border border-gray-800/50 rounded-2xl p-6">
+            <div className="bg-white border border-gray-200 rounded-2xl p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-gray-400 text-sm">Total Tasks</p>
-                  <p className="text-2xl font-bold text-white">{totalTasks}</p>
+                  <p className="text-gray-700 text-sm">Total Tasks</p>
+                  <p className="text-2xl font-bold text-black">{totalTasks}</p>
                 </div>
-                <Target className="h-8 w-8 text-blue-400" />
+                <Target className="h-8 w-8 text-blue-500" />
               </div>
             </div>
 
-            <div className="bg-gray-900/30 backdrop-blur-xl border border-gray-800/50 rounded-2xl p-6">
+            <div className="bg-white border border-gray-200 rounded-2xl p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-gray-400 text-sm">Completed</p>
-                  <p className="text-2xl font-bold text-white">{completedTasks}</p>
+                  <p className="text-gray-700 text-sm">Completed</p>
+                  <p className="text-2xl font-bold text-black">{completedTasks}</p>
                 </div>
-                <CheckCircle className="h-8 w-8 text-emerald-400" />
+                <CheckCircle className="h-8 w-8 text-emerald-500" />
               </div>
             </div>
 
-            <div className="bg-gray-900/30 backdrop-blur-xl border border-gray-800/50 rounded-2xl p-6">
+            <div className="bg-white border border-gray-200 rounded-2xl p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-gray-400 text-sm">Completion Rate</p>
-                  <p className="text-2xl font-bold text-white">
+                  <p className="text-gray-700 text-sm">Completion Rate</p>
+                  <p className="text-2xl font-bold text-black">
                     {totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0}%
                   </p>
                 </div>
-                <TrendingUp className="h-8 w-8 text-cyan-400" />
+                <TrendingUp className="h-8 w-8 text-cyan-500" />
               </div>
             </div>
 
-            <div className="bg-gray-900/30 backdrop-blur-xl border border-gray-800/50 rounded-2xl p-6">
+            <div className="bg-white border border-gray-200 rounded-2xl p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-gray-400 text-sm">AI Quality</p>
-                  <p className="text-2xl font-bold text-white">{Math.round(analytics.avgQuality * 100)}%</p>
+                  <p className="text-gray-700 text-sm">AI Quality</p>
+                  <p className="text-2xl font-bold text-black">{Math.round(analytics.avgQuality * 100)}%</p>
                 </div>
-                <Brain className="h-8 w-8 text-purple-400" />
+                <Brain className="h-8 w-8 text-purple-500" />
               </div>
             </div>
           </div>
@@ -220,9 +220,9 @@ export const ActionPlans: React.FC<ActionPlansProps> = ({
           {/* Charts */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Category Distribution */}
-            <div className="bg-gray-900/30 backdrop-blur-xl border border-gray-800/50 rounded-2xl p-6">
-              <h3 className="text-lg font-semibold text-white mb-4 flex items-center space-x-2">
-                <BarChart3 className="h-5 w-5 text-blue-400" />
+            <div className="bg-white border border-gray-200 rounded-2xl p-6">
+              <h3 className="text-lg font-semibold text-black mb-4 flex items-center space-x-2">
+                <BarChart3 className="h-5 w-5 text-blue-500" />
                 <span>Content Categories</span>
               </h3>
               <div className="space-y-3">
@@ -231,12 +231,12 @@ export const ActionPlans: React.FC<ActionPlansProps> = ({
                   return (
                     <div key={category} className="space-y-1">
                       <div className="flex justify-between text-sm">
-                        <span className="text-gray-300 capitalize">{category.replace('-', ' ')}</span>
-                        <span className="text-gray-400">{count} ({Math.round(percentage)}%)</span>
+                        <span className="text-gray-700 capitalize">{category.replace('-', ' ')}</span>
+                        <span className="text-gray-500">{count} ({Math.round(percentage)}%)</span>
                       </div>
-                      <div className="w-full bg-gray-700 rounded-full h-2">
+                      <div className="w-full bg-gray-200 rounded-full h-2">
                         <div 
-                          className="bg-gradient-to-r from-blue-500 to-cyan-500 h-2 rounded-full"
+                          className="bg-blue-500 h-2 rounded-full"
                           style={{ width: `${percentage}%` }}
                         />
                       </div>
@@ -247,9 +247,9 @@ export const ActionPlans: React.FC<ActionPlansProps> = ({
             </div>
 
             {/* Plan Progress */}
-            <div className="bg-gray-900/30 backdrop-blur-xl border border-gray-800/50 rounded-2xl p-6">
-              <h3 className="text-lg font-semibold text-white mb-4 flex items-center space-x-2">
-                <Target className="h-5 w-5 text-emerald-400" />
+            <div className="bg-white border border-gray-200 rounded-2xl p-6">
+              <h3 className="text-lg font-semibold text-black mb-4 flex items-center space-x-2">
+                <Target className="h-5 w-5 text-emerald-500" />
                 <span>Plan Progress</span>
               </h3>
               <div className="space-y-4">
@@ -261,12 +261,12 @@ export const ActionPlans: React.FC<ActionPlansProps> = ({
                   return (
                     <div key={plan.id} className="space-y-2">
                       <div className="flex justify-between text-sm">
-                        <span className="text-gray-300 truncate">{plan.title}</span>
-                        <span className="text-gray-400">{completedSteps}/{totalSteps}</span>
+                        <span className="text-gray-700 truncate">{plan.title}</span>
+                        <span className="text-gray-500">{completedSteps}/{totalSteps}</span>
                       </div>
-                      <div className="w-full bg-gray-700 rounded-full h-2">
+                      <div className="w-full bg-gray-200 rounded-full h-2">
                         <div 
-                          className="bg-gradient-to-r from-emerald-500 to-cyan-500 h-2 rounded-full transition-all"
+                          className="bg-emerald-500 h-2 rounded-full transition-all"
                           style={{ width: `${progress}%` }}
                         />
                       </div>

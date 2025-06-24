@@ -28,7 +28,7 @@ export const ActionPlanView: React.FC<ActionPlanViewProps> = ({
   const progressPercentage = totalSteps > 0 ? (completedSteps / totalSteps) * 100 : 0;
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg">
+    <div className="bg-white border border-gray-200 rounded-lg shadow">
       {/* Header */}
       <div className="p-6 border-b border-gray-200">
         <h2 className="text-xl font-medium text-black mb-4">{actionPlan.title}</h2>
@@ -50,7 +50,7 @@ export const ActionPlanView: React.FC<ActionPlanViewProps> = ({
         
         <div className="w-full bg-gray-200 rounded-full h-2">
           <div 
-            className="bg-black h-2 rounded-full transition-all duration-500"
+            className="bg-blue-500 h-2 rounded-full transition-all duration-500"
             style={{ width: `${progressPercentage}%` }}
           />
         </div>
@@ -63,7 +63,7 @@ export const ActionPlanView: React.FC<ActionPlanViewProps> = ({
             const isExpanded = expandedSteps.has(step.id);
             
             return (
-              <div key={step.id} className="border border-gray-200 rounded-lg">
+              <div key={step.id} className="border border-gray-200 rounded-lg bg-white">
                 <div className="p-4">
                   <div className="flex items-center space-x-3">
                     <button
@@ -71,14 +71,14 @@ export const ActionPlanView: React.FC<ActionPlanViewProps> = ({
                       className="flex-shrink-0"
                     >
                       {step.completed ? (
-                        <CheckCircle className="h-5 w-5 text-black" />
+                        <CheckCircle className="h-5 w-5 text-blue-500" />
                       ) : (
                         <Circle className="h-5 w-5 text-gray-400" />
                       )}
                     </button>
                     
                     <div className="flex-1">
-                      <h4 className={`font-medium ${step.completed ? 'text-gray-500 line-through' : 'text-black'}`}>
+                      <h4 className={`font-medium ${step.completed ? 'text-gray-500 line-through' : 'text-black'}`}> 
                         {step.title}
                       </h4>
                       {step.dueDate && (
@@ -102,14 +102,14 @@ export const ActionPlanView: React.FC<ActionPlanViewProps> = ({
                   
                   {isExpanded && (
                     <div className="mt-4 pl-8 pt-3 border-t border-gray-100">
-                      <p className="text-sm text-gray-600 mb-3">{step.description}</p>
+                      <p className="text-sm text-gray-700 mb-3">{step.description}</p>
                       
                       {step.resources.length > 0 && (
                         <div>
                           <h5 className="text-sm font-medium text-black mb-2">Resources</h5>
                           <ul className="space-y-1">
                             {step.resources.map((resource, index) => (
-                              <li key={index} className="text-sm text-gray-600">
+                              <li key={index} className="text-sm text-gray-700">
                                 • {resource}
                               </li>
                             ))}

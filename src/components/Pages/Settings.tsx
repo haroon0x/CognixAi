@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { Settings as SettingsIcon, Brain, Zap, Bell, Shield, Palette } from 'lucide-react';
+import { useGoogleCalendar } from '../../hooks/useGoogleCalendar';
 
 export const Settings: React.FC = () => {
   const [activeTab, setActiveTab] = useState('ai');
+  const { syncCalendar, loading: calendarLoading, events: calendarEvents, error: calendarError } = useGoogleCalendar();
 
   const tabs = [
     { id: 'ai', label: 'AI Agents', icon: Brain },
@@ -112,6 +114,39 @@ export const Settings: React.FC = () => {
                         <span className="text-gray-300">Deadline suggestions</span>
                       </label>
                     </div>
+                  </div>
+
+                  {/* Google Calendar Integration */}
+                  <div className="p-4 bg-gray-800/30 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-medium text-white">Google Calendar Integration</h4>
+                    </div>
+                    <p className="text-gray-400 text-sm mb-3">
+                      Connect and sync your Google Calendar events for intelligent planning.
+                    </p>
+                    <button
+                      onClick={() => syncCalendar('testuser')}
+                      className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+                      disabled={calendarLoading}
+                    >
+                      {calendarLoading ? 'Connecting...' : 'Connect Google Calendar'}
+                    </button>
+                    {calendarError && (
+                      <div className="mt-2 text-red-400 text-sm">{calendarError}</div>
+                    )}
+                    {calendarEvents && (
+                      <div className="mt-4">
+                        <h5 className="text-white font-semibold mb-2">Fetched Events:</h5>
+                        <ul className="text-gray-300 text-sm space-y-1 max-h-40 overflow-y-auto">
+                          {calendarEvents.map((event, idx) => (
+                            <li key={event.id || idx} className="border-b border-gray-700 pb-1 mb-1">
+                              <span className="font-medium">{event.title || 'Untitled Event'}</span>
+                              <span className="ml-2 text-gray-400">{event.start} - {event.end}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

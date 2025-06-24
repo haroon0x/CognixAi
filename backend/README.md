@@ -116,17 +116,15 @@ For production deployment:
 
 ## Environment Variables
 
-```bash
-# Required
-GOOGLE_API_KEY=your_google_api_key_here
+You can add any API key or secret to a `.env` file in the project root. All variables are loaded and available to the backend, whether or not they are prefixed. Example keys:
 
-# Optional fallbacks
+```
+GOOGLE_API_KEY=your_google_api_key_here
 OPENAI_API_KEY=your_openai_api_key_here
 ANTHROPIC_API_KEY=your_anthropic_api_key_here
-
-# Server config
-HOST=0.0.0.0
-PORT=8000
-DEBUG=True
-FRONTEND_URL=http://localhost:5173
+COGNIX_CUSTOM_KEY=your_custom_value
 ```
+
+- All variables in `.env` are available via `os.environ` and `config.get_api_key('KEY_NAME')`.
+- You can add any key you need; extra fields are allowed.
+- See `.env.example` for a template.

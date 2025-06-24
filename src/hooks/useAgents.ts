@@ -1,7 +1,9 @@
 import { useState, useCallback } from 'react';
 import { ContentItem, ActionPlan, UploadProgress, AgentResponse } from '../types';
 
-const API_BASE_URL = 'http://localhost:8000/api';
+// IMPORTANT: Set REACT_APP_API_URL in your .env to your backend URL (e.g., http://localhost:8000/api)
+// If using a proxy (see vite.config.ts), '/api' will be proxied to the backend.
+const API_BASE_URL = import.meta.env.REACT_APP_API_URL || '/api';
 
 export const useAgents = () => {
   const [contentItems, setContentItems] = useState<ContentItem[]>([]);

@@ -14,9 +14,10 @@ import tempfile
 # Load environment variables
 load_dotenv()
 
-from agents.collector_agent import CollectorAgent
 from agents.context_mapper_agent import ContextMapperAgent
 from agents.planner_agent import PlannerAgent
+from agents.ingest_agent import IngestAgent
+from agents.plan_agent import plan_agent
 
 app = FastAPI(
     title="Cognix Backend API", 
@@ -30,17 +31,18 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:5173",  # Vite dev server
         "http://localhost:3000",  # Alternative React dev server
-        os.getenv("FRONTEND_URL", "http://localhost:5173")
+        os.getenv("FRONTEND_URL", "http://localhost:5173")  # Set FRONTEND_URL in .env for production
     ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+# NOTE: For production, set FRONTEND_URL in your .env to your deployed frontend URL.
 
 # Initialize agents
 print("🚀 Initializing Cognix AI Agents...")
 try:
-    collector_agent = CollectorAgent()
+    ingest_agent = IngestAgent()
     context_mapper_agent = ContextMapperAgent()
     planner_agent = PlannerAgent()
     print("✅ All agents initialized successfully!")
@@ -79,6 +81,19 @@ class ActionPlanResponse(BaseModel):
     priority: str
     estimated_duration: str
     dependencies: List[str]
+
+class IngestRequest(BaseModel):
+    sources: Optional[List[str]] = None
+    date_range: Optional[dict] = None
+    filters: Optional[dict] = None
+    user_id: Optional[str] = "default"
+
+class CategorizeRequest(BaseModel):
+    content_items: List[dict]
+
+class PlanRequest(BaseModel):
+    content_items: List[dict]
+    user_goals: List[str]
 
 # In-memory storage (replace with database in production)
 content_store = {}
@@ -131,52 +146,8 @@ async def upload_files(files: List[UploadFile] = File(...)):
                 content = await file.read()
                 temp_file.write(content)
             
-            # Process through Collector Agent
-            result = None
-            if file.content_type == "application/pdf":
-                result = await collector_agent.extract_from_pdf(temp_path)
-            elif file.content_type and file.content_type.startswith("image/"):
-                result = await collector_agent.extract_from_image(temp_path)
-            else:
-                # Handle text files
-                try:
-                    with open(temp_path, "r", encoding="utf-8") as f:
-                        text_content = f.read()
-                    result = await collector_agent.extract_from_text(text_content, file.filename)
-                except UnicodeDecodeError:
-                    # Try with different encoding
-                    try:
-                        with open(temp_path, "r", encoding="latin-1") as f:
-                            text_content = f.read()
-                        result = await collector_agent.extract_from_text(text_content, file.filename)
-                    except Exception as encoding_error:
-                        print(f"❌ Encoding error for {file.filename}: {encoding_error}")
-                        result = {
-                            "success": False,
-                            "error": f"Could not read file with any encoding: {str(encoding_error)}"
-                        }
-            
-            if result and result["success"]:
-                content_item = result["data"]
-                
-                # Process through Context Mapper Agent
-                print(f"🏷️ Categorizing content: {content_item['title']}")
-                try:
-                    categorized = await context_mapper_agent.categorize_content([content_item])
-                    if categorized["success"]:
-                        content_item = categorized["data"][0]
-                except Exception as categorization_error:
-                    print(f"⚠️ Categorization failed: {categorization_error}")
-                    # Continue without categorization
-                
-                # Store in memory
-                content_store[content_item["id"]] = content_item
-                results.append(ContentResponse(**content_item))
-                print(f"✅ Successfully processed: {file.filename}")
-            else:
-                error_msg = result.get('error', 'Unknown error') if result else 'Processing failed'
-                print(f"❌ Failed to process: {file.filename} - {error_msg}")
-                raise HTTPException(status_code=500, detail=f"Error processing {file.filename}: {error_msg}")
+            # CollectorAgent is not implemented. Raise a clear error.
+            raise NotImplementedError("File ingestion is not implemented. Please use the /api/ingest endpoint.")
             
         except Exception as e:
             print(f"❌ Exception processing {file.filename}: {str(e)}")
@@ -195,33 +166,27 @@ async def upload_files(files: List[UploadFile] = File(...)):
 
 @app.post("/api/upload/text", response_model=ContentResponse)
 async def upload_text(input_data: TextInput):
-    """Process text input through Collector Agent"""
     try:
-        print(f"📝 Processing text input: {input_data.title}")
-        
-        result = await collector_agent.extract_from_text(input_data.text, input_data.title)
-        
-        if result["success"]:
-            content_item = result["data"]
-            
-            # Process through Context Mapper Agent
-            print(f"🏷️ Categorizing text content: {content_item['title']}")
-            try:
-                categorized = await context_mapper_agent.categorize_content([content_item])
-                if categorized["success"]:
-                    content_item = categorized["data"][0]
-            except Exception as categorization_error:
-                print(f"⚠️ Categorization failed: {categorization_error}")
-                # Continue without categorization
-            
-            # Store in memory
-            content_store[content_item["id"]] = content_item
-            print(f"✅ Successfully processed text: {input_data.title}")
-            return ContentResponse(**content_item)
-        else:
-            print(f"❌ Failed to process text: {result.get('error', 'Unknown error')}")
-            raise HTTPException(status_code=500, detail=result["error"])
-            
+        result = None
+        async for event in ingest_agent.run_async({"text": input_data.text, "title": input_data.title}):
+            if hasattr(event, 'content') and event.content:
+                result = event.content
+        if not result:
+            raise HTTPException(status_code=500, detail="No result from agent.")
+        content_item = {
+            "id": result.get("id", f"text-{datetime.now().timestamp()}"),
+            "type": "text",
+            "title": input_data.title,
+            "content": input_data.text,
+            "extracted_text": result.get("extracted_text", input_data.text),
+            "metadata": result.get("metadata", {}),
+            "timestamp": datetime.now().isoformat(),
+            "status": "completed",
+            "categories": result.get("categories", []),
+            "relevance_score": result.get("relevance_score", None)
+        }
+        content_store[content_item["id"]] = content_item
+        return ContentResponse(**content_item)
     except Exception as e:
         print(f"❌ Exception processing text: {str(e)}")
         traceback.print_exc()
@@ -233,29 +198,8 @@ async def upload_youtube(input_data: YouTubeInput):
     try:
         print(f"🎥 Processing YouTube URL: {input_data.url}")
         
-        result = await collector_agent.extract_from_youtube(input_data.url)
+        raise NotImplementedError("YouTube ingestion is not implemented. Please use the /api/ingest endpoint.")
         
-        if result["success"]:
-            content_item = result["data"]
-            
-            # Process through Context Mapper Agent
-            print(f"🏷️ Categorizing YouTube content: {content_item['title']}")
-            try:
-                categorized = await context_mapper_agent.categorize_content([content_item])
-                if categorized["success"]:
-                    content_item = categorized["data"][0]
-            except Exception as categorization_error:
-                print(f"⚠️ Categorization failed: {categorization_error}")
-                # Continue without categorization
-            
-            # Store in memory
-            content_store[content_item["id"]] = content_item
-            print(f"✅ Successfully processed YouTube: {content_item['title']}")
-            return ContentResponse(**content_item)
-        else:
-            print(f"❌ Failed to process YouTube: {result.get('error', 'Unknown error')}")
-            raise HTTPException(status_code=500, detail=result["error"])
-            
     except Exception as e:
         print(f"❌ Exception processing YouTube: {str(e)}")
         traceback.print_exc()
@@ -319,6 +263,64 @@ async def toggle_action_step(plan_id: str, step_id: str):
         raise HTTPException(status_code=404, detail="Step not found")
     except Exception as e:
         print(f"❌ Exception toggling step: {str(e)}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/ingest")
+async def ingest_data(request: IngestRequest):
+    """Trigger data ingestion using IngestAgent"""
+    try:
+        print(f"Received ingest request: {request.dict()}")
+        ingest_agent = IngestAgent()
+        result = await ingest_agent.process_ingestion_request(
+            sources=request.sources,
+            date_range=request.date_range,
+            filters=request.filters,
+            user_id=request.user_id
+        )
+        print(f"Ingest result: {result}")
+        return JSONResponse(content=result)
+    except Exception as e:
+        print(f"❌ Error in ingestion: {e}")
+        traceback.print_exc()
+        return JSONResponse(content={"success": False, "error": str(e), "data": {}}, status_code=500)
+
+@app.post("/api/categorize")
+async def categorize_content(request: CategorizeRequest):
+    """Categorize ingested content using ContextMapperAgent"""
+    try:
+        # For demo, just join all text fields
+        all_text = " ".join([item.get("extracted_text", "") for item in request.content_items])
+        result = await context_mapper_agent.process(all_text)
+        return JSONResponse(content=result)
+    except Exception as e:
+        print(f"❌ Error in categorization: {e}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Categorization error: {str(e)}")
+
+@app.post("/api/plan")
+async def generate_plan(request: PlanRequest):
+    """Generate an action plan from categorized content and user goals using PlannerAgent"""
+    try:
+        result = await planner_agent.generate_action_plan(request.content_items, request.user_goals)
+        return JSONResponse(content=result)
+    except Exception as e:
+        print(f"❌ Error in planning: {e}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Planning error: {str(e)}")
+
+@app.post("/api/plan-from-text")
+async def plan_from_text(input_data: TextInput):
+    try:
+        result = None
+        async for event in plan_agent.run_async({"text": input_data.text}):
+            if hasattr(event, 'content') and event.content:
+                result = event.content
+        if not result:
+            raise HTTPException(status_code=500, detail="No result from agent.")
+        return {"plan": result.get("plan", [])}
+    except Exception as e:
+        print(f"❌ Exception processing plan: {str(e)}")
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
