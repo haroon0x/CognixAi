@@ -21,57 +21,21 @@ function BackendStatusIndicator() {
   }, []);
 
   const getStatus = () => {
-    if (connected === null) return 'Checking backend...';
-    if (connected) return 'Backend Connected';
-    return 'Backend Disconnected';
+    if (connected === null) return 'Checking...';
+    if (connected) return 'Connected';
+    return 'Disconnected';
   };
 
   const getDotColor = () => {
-    if (connected === null) return 'bg-gradient-to-r from-gray-400 to-gray-300';
-    if (connected) return 'bg-gradient-to-r from-green-400 to-emerald-500';
-    return 'bg-gradient-to-r from-red-400 to-pink-500';
+    if (connected === null) return 'bg-gray-400';
+    if (connected) return 'bg-green-500';
+    return 'bg-red-500';
   };
 
   return (
-    <div
-      className="fixed top-4 right-4 z-50 flex items-center shadow-lg rounded-xl px-3 py-1"
-      style={{
-        background: 'rgba(255,255,255,0.18)',
-        backdropFilter: 'blur(8px)',
-        border: '1px solid rgba(200,200,200,0.18)',
-        boxShadow: '0 4px 16px 0 rgba(31, 38, 135, 0.10)',
-        minWidth: 120,
-      }}
-    >
-      <span
-        className={`inline-block w-2.5 h-2.5 rounded-full mr-2 relative ${getDotColor()}`}
-        style={{
-          boxShadow: connected === null
-            ? '0 0 0 0 rgba(156,163,175,0.7)'
-            : connected
-            ? '0 0 6px 1px #34d399, 0 0 0 0 #34d399'
-            : '0 0 6px 1px #f87171, 0 0 0 0 #f87171',
-          animation: 'pulse 1.2s infinite',
-        }}
-      />
-      <span
-        style={{
-          fontWeight: 500,
-          fontFamily: 'Inter, sans-serif',
-          fontSize: 12,
-          color: connected === null ? '#6b7280' : connected ? '#059669' : '#dc2626',
-          letterSpacing: 0.1,
-        }}
-      >
-        {getStatus()}
-      </span>
-      <style>{`
-        @keyframes pulse {
-          0% { box-shadow: 0 0 0 0 rgba(52,211,153,0.7); }
-          70% { box-shadow: 0 0 0 6px rgba(52,211,153,0); }
-          100% { box-shadow: 0 0 0 0 rgba(52,211,153,0); }
-        }
-      `}</style>
+    <div className="fixed top-4 right-4 z-50 flex items-center bg-white/90 backdrop-blur-sm border border-gray-200 rounded-lg px-3 py-2 shadow-sm">
+      <span className={`inline-block w-2 h-2 rounded-full mr-2 ${getDotColor()}`} />
+      <span className="text-xs font-medium text-gray-700">{getStatus()}</span>
     </div>
   );
 }
@@ -79,22 +43,38 @@ function BackendStatusIndicator() {
 function PlanGeneratedToast({ show, onClose, onViewPlan }: { show: boolean; onClose: () => void; onViewPlan: () => void }) {
   React.useEffect(() => {
     if (show) {
-      const timer = setTimeout(onClose, 6000);
+      const timer = setTimeout(() => {
+        onViewPlan(); // Auto-redirect after 3 seconds
+      }, 3000);
       return () => clearTimeout(timer);
     }
-  }, [show, onClose]);
+  }, [show, onViewPlan]);
 
   if (!show) return null;
+  
   return (
-    <div className="fixed top-20 right-6 z-50 bg-green-600 text-white px-6 py-3 rounded-xl shadow-lg flex items-center space-x-4 animate-fade-in">
-      <span className="font-semibold">Plan generated successfully!</span>
-      <button
-        onClick={onViewPlan}
-        className="ml-2 px-3 py-1 bg-white text-green-700 rounded hover:bg-gray-100 font-medium transition-colors"
-      >
-        View Plan
-      </button>
-      <button onClick={onClose} className="ml-2 text-white hover:text-gray-200 focus:outline-none text-xl">&times;</button>
+    <div className="fixed top-20 right-6 z-50 bg-white border border-gray-200 rounded-lg shadow-lg p-4 max-w-sm animate-fade-in">
+      <div className="flex items-start space-x-3">
+        <div className="w-2 h-2 bg-green-500 rounded-full mt-2 flex-shrink-0" />
+        <div className="flex-1">
+          <h4 className="font-medium text-black">Plan Generated</h4>
+          <p className="text-sm text-gray-600 mt-1">Your action plan is ready. Redirecting in 3 seconds...</p>
+          <div className="flex space-x-2 mt-3">
+            <button
+              onClick={onViewPlan}
+              className="text-xs px-3 py-1 bg-black text-white rounded hover:bg-gray-800 transition-colors"
+            >
+              View Now
+            </button>
+            <button
+              onClick={onClose}
+              className="text-xs px-3 py-1 text-gray-600 hover:text-black transition-colors"
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -124,9 +104,11 @@ function App() {
     resetPlanGenerated
   } = useAgents();
 
-  // Show toast when planGenerated becomes true
+  // Show toast and auto-redirect when plan is generated
   React.useEffect(() => {
-    if (planGenerated) setShowPlanToast(true);
+    if (planGenerated) {
+      setShowPlanToast(true);
+    }
   }, [planGenerated]);
 
   const handleViewPlan = () => {
@@ -138,11 +120,6 @@ function App() {
   const handleCloseToast = () => {
     setShowPlanToast(false);
     resetPlanGenerated();
-  };
-
-  // New: handler to navigate to plans after plan creation
-  const handlePlanCreatedAndNavigate = () => {
-    setCurrentPage('plans');
   };
 
   const renderPage = () => {
@@ -159,7 +136,6 @@ function App() {
             onYouTubeSubmit={processYouTube}
             onGenerateActionPlan={generateActionPlan}
             analytics={getAnalytics()}
-            onPlanCreatedAndNavigate={handlePlanCreatedAndNavigate}
           />
         );
       case 'plans':
@@ -185,7 +161,6 @@ function App() {
       <BackendStatusIndicator />
       <PlanGeneratedToast show={showPlanToast} onClose={handleCloseToast} onViewPlan={handleViewPlan} />
       <div className="min-h-screen bg-gray-50">
-        {/* Sidebar */}
         <Sidebar
           currentPage={currentPage}
           onPageChange={setCurrentPage}
@@ -193,7 +168,6 @@ function App() {
           onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
         />
         
-        {/* Main Content */}
         <div className={`transition-all duration-200 ${sidebarCollapsed ? 'ml-16' : 'ml-64'}`}>
           <Header
             currentPage={currentPage}
