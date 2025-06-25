@@ -4,10 +4,11 @@ import { Header } from './components/Layout/Header';
 import { Dashboard } from './components/Pages/Dashboard';
 import { ContentManager } from './components/Pages/ContentManager';
 import { ActionPlans } from './components/Pages/ActionPlans';
+import { Analytics } from './components/Pages/Analytics';
 import { Settings } from './components/Pages/Settings';
 import { useAgents } from './hooks/useAgents';
 
-type Page = 'dashboard' | 'plans' | 'settings';
+type Page = 'dashboard' | 'content' | 'plans' | 'analytics' | 'settings';
 
 function BackendStatusIndicator() {
   const [connected, setConnected] = useState<boolean | null>(null);
@@ -138,6 +139,15 @@ function App() {
             analytics={getAnalytics()}
           />
         );
+      case 'content':
+        return (
+          <ContentManager
+            contentItems={contentItems}
+            onDeleteContent={deleteContent}
+            onSearchContent={searchContent}
+            onFilterByCategory={filterByCategory}
+          />
+        );
       case 'plans':
         return (
           <ActionPlans
@@ -147,6 +157,14 @@ function App() {
             onStepToggle={toggleActionStep}
             analytics={getAnalytics()}
             rawPlan={rawPlan}
+          />
+        );
+      case 'analytics':
+        return (
+          <Analytics
+            contentItems={contentItems}
+            actionPlans={actionPlans}
+            analytics={getAnalytics()}
           />
         );
       case 'settings':
