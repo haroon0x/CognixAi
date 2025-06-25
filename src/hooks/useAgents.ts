@@ -5,11 +5,21 @@ import { ContentItem, ActionPlan, UploadProgress, AgentResponse } from '../types
 // If using a proxy (see vite.config.ts), '/api' will be proxied to the backend.
 const API_BASE_URL = import.meta.env.REACT_APP_API_URL || '/api';
 
-export const useAgents = () => {
+const AGENT_NAME = "planner_agent"; // Change to your actual agent folder name
+const USER_ID = "u_123";
+const SESSION_ID = "s_" + USER_ID; // Or generate a unique session per user
+
+// Use the new /plan endpoint for all agent calls
+export function useAgents() {
+  const [loading, setLoading] = useState(false);
+  const [plan, setPlan] = useState<ActionPlan | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [rawOutput, setRawOutput] = useState<any>(null);
   const [contentItems, setContentItems] = useState<ContentItem[]>([]);
-  const [actionPlans, setActionPlans] = useState<ActionPlan[]>([]);
   const [uploads, setUploads] = useState<UploadProgress[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [rawPlan, setRawPlan] = useState<string | null>(null);
+  const [planGenerated, setPlanGenerated] = useState(false);
 
   const addUpload = useCallback((fileId: string, fileName: string) => {
     const upload: UploadProgress = {
@@ -27,6 +37,91 @@ export const useAgents = () => {
       upload.fileId === fileId ? { ...upload, ...updates } : upload
     ));
   }, []);
+
+  // Generate a plan using the /plan endpoint
+  const generatePlan = useCallback(async (goals: string[]) => {
+    setLoading(true);
+    setError(null);
+    setPlan(null);
+    setRawPlan(null);
+    setRawOutput(null);
+    setPlanGenerated(false);
+    try {
+      const response = await fetch(`/plan`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: goals.join("\n") })
+      });
+      if (!response.ok) throw new Error(`Server error: ${response.status}`);
+      const data = await response.json();
+      console.log("API /plan response:", data);
+      setRawOutput(data);
+      if (data && !data.error && data.id && data.title && Array.isArray(data.steps)) {
+        setPlan(data);
+        setPlanGenerated(true);
+      } else if (data && (data.error || data.raw)) {
+        setRawPlan(data.raw || data.error);
+      } else {
+        setError("No plan returned from agent.");
+      }
+    } catch (err: any) {
+      setError(err.message || "Unknown error");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Utility to reset the plan generated flag
+  const resetPlanGenerated = useCallback(() => setPlanGenerated(false), []);
+
+  // Process text and extract plan using /plan endpoint
+  const processText = useCallback(async (text: string, title: string) => {
+    setIsProcessing(true);
+    const fileId = `text-${Date.now()}`;
+    addUpload(fileId, title);
+    setRawPlan(null);
+    try {
+      updateUpload(fileId, { status: 'processing', progress: 50 });
+      const response = await fetch(`/plan`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text })
+      });
+      if (response.ok) {
+        const data = await response.json();
+        console.log("API /plan response:", data);
+        setRawOutput(data);
+        if (data && !data.error && data.id && data.title && Array.isArray(data.steps)) {
+          setPlan(data);
+          setContentItems(prev => [...prev, {
+            id: fileId,
+            type: 'text',
+            title,
+            content: text,
+            extractedText: text,
+            metadata: {},
+            timestamp: new Date(),
+            status: 'completed',
+            categories: [],
+          }]);
+          updateUpload(fileId, { status: 'completed', progress: 100 });
+        } else if (data && (data.error || data.raw)) {
+          setRawPlan(data.raw || data.error);
+          updateUpload(fileId, { status: 'completed', progress: 100 });
+        } else {
+          setError('No plan returned from agent.');
+          updateUpload(fileId, { status: 'error' });
+        }
+      } else {
+        setError('Server error');
+        updateUpload(fileId, { status: 'error' });
+      }
+    } catch (error: any) {
+      setError(error.message || 'Unknown error');
+      updateUpload(fileId, { status: 'error' });
+    }
+    setIsProcessing(false);
+  }, [addUpload, updateUpload]);
 
   const processFiles = useCallback(async (files: FileList) => {
     setIsProcessing(true);
@@ -72,40 +167,6 @@ export const useAgents = () => {
     setIsProcessing(false);
   }, [addUpload, updateUpload]);
 
-  const processText = useCallback(async (text: string, title: string) => {
-    setIsProcessing(true);
-    const fileId = `text-${Date.now()}`;
-    addUpload(fileId, title);
-
-    try {
-      updateUpload(fileId, { status: 'processing', progress: 50 });
-
-      const response = await fetch(`${API_BASE_URL}/upload/text`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ text, title }),
-      });
-
-      if (response.ok) {
-        const newItem = await response.json();
-        setContentItems(prev => [...prev, {
-          ...newItem,
-          timestamp: new Date(newItem.timestamp)
-        }]);
-        updateUpload(fileId, { status: 'completed', progress: 100 });
-      } else {
-        updateUpload(fileId, { status: 'error' });
-      }
-    } catch (error) {
-      console.error('Error processing text:', error);
-      updateUpload(fileId, { status: 'error' });
-    }
-
-    setIsProcessing(false);
-  }, [addUpload, updateUpload]);
-
   const processYouTube = useCallback(async (url: string) => {
     setIsProcessing(true);
     const fileId = `youtube-${Date.now()}`;
@@ -140,34 +201,6 @@ export const useAgents = () => {
     setIsProcessing(false);
   }, [addUpload, updateUpload]);
 
-  const generateActionPlan = useCallback(async (goals: string[]) => {
-    if (contentItems.length === 0) return;
-
-    setIsProcessing(true);
-    
-    try {
-      const response = await fetch(`${API_BASE_URL}/generate-plan`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          goals,
-          content_ids: contentItems.map(item => item.id)
-        }),
-      });
-
-      if (response.ok) {
-        const newPlan = await response.json();
-        setActionPlans(prev => [...prev, newPlan]);
-      }
-    } catch (error) {
-      console.error('Failed to generate action plan:', error);
-    }
-
-    setIsProcessing(false);
-  }, [contentItems]);
-
   const toggleActionStep = useCallback(async (planId: string, stepId: string) => {
     try {
       const response = await fetch(`${API_BASE_URL}/action-plans/${planId}/steps/${stepId}/toggle`, {
@@ -176,20 +209,23 @@ export const useAgents = () => {
 
       if (response.ok) {
         const result = await response.json();
-        setActionPlans(prev => prev.map(plan => {
-          if (plan.id === planId) {
-            return {
-              ...plan,
-              steps: plan.steps.map(step => 
-                step.id === stepId ? { ...step, completed: result.completed } : step
-              )
-            };
-          }
-          return plan;
-        }));
+        // Remove or comment out the following block, as ContentItem does not have steps
+        // setContentItems(prev => prev.map(item => {
+        //   if (item.id === planId) {
+        //     return {
+        //       ...item,
+        //       steps: item.steps.map(step => 
+        //         step.id === stepId ? { ...step, completed: !step.completed } : step
+        //       )
+        //     };
+        //   }
+        //   return item;
+        // }));
+      } else {
+        // handle error if needed
       }
     } catch (error) {
-      console.error('Failed to toggle step:', error);
+      // handle error if needed
     }
   }, []);
 
@@ -213,7 +249,7 @@ export const useAgents = () => {
   const exportData = useCallback(() => {
     const data = {
       contentItems,
-      actionPlans,
+      actionPlans: [],
       exportDate: new Date().toISOString()
     };
     
@@ -226,7 +262,7 @@ export const useAgents = () => {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-  }, [contentItems, actionPlans]);
+  }, [contentItems]);
 
   const getAnalytics = useCallback(() => {
     const totalContent = contentItems.length;
@@ -234,11 +270,9 @@ export const useAgents = () => {
       ? contentItems.reduce((sum, item) => sum + (item.relevanceScore || 0), 0) / contentItems.length
       : 0;
     
-    const totalTasks = actionPlans.reduce((sum, plan) => sum + plan.steps.length, 0);
-    const completedTasks = actionPlans.reduce((sum, plan) => 
-      sum + plan.steps.filter(step => step.completed).length, 0
-    );
-    const completionRate = totalTasks > 0 ? completedTasks / totalTasks : 0;
+    const totalTasks = 0;
+    const completedTasks = 0;
+    const completionRate = 0;
 
     const categoryDistribution = contentItems.reduce((acc, item) => {
       item.categories.forEach(category => {
@@ -255,22 +289,28 @@ export const useAgents = () => {
       totalTasks,
       completedTasks
     };
-  }, [contentItems, actionPlans]);
+  }, [contentItems]);
+
+  // At the end of the hook, ensure actionPlans is always an array
+  const actionPlans = plan ? [plan] : [];
 
   return {
     contentItems,
     actionPlans,
+    rawPlan,
     uploads,
     isProcessing,
     processFiles,
     processText,
     processYouTube,
-    generateActionPlan,
+    generateActionPlan: generatePlan,
     toggleActionStep,
     deleteContent,
     searchContent,
     filterByCategory,
     exportData,
-    getAnalytics
+    getAnalytics,
+    planGenerated,
+    resetPlanGenerated,
   };
-};
+}

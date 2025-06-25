@@ -47,7 +47,6 @@ export const UploadZone: React.FC<UploadZoneProps> = ({
   const handleTextSubmit = () => {
     if (textContent.trim()) {
       onTextSubmit(textContent, 'Note');
-      setTextContent('');
     }
   };
 

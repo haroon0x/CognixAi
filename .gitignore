@@ -7,20 +7,38 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
+# Dependency directories
+node_modules/
+dist/
+dist-ssr/
+
+# Local environment files
 *.local
+.env
+.env.*
+
+# Python
+__pycache__/
+.venv/
+*.pyc
+*.pyo
+*.pyd
 
 # Editor directories and files
-.vscode/*
+.vscode/
 !.vscode/extensions.json
-.idea
+.idea/
 .DS_Store
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
-.env
+
+# Coverage
+coverage/
+
+# Project-specific
 uv.lock
+adk-python/
+adk-samples-main/

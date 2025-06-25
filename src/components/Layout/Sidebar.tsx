@@ -22,7 +22,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const menuItems = [
     { id: 'dashboard', label: 'Tasks', icon: CheckSquare },
-    { id: 'content', label: 'Content', icon: FileText },
     { id: 'plans', label: 'Plans', icon: Target },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];

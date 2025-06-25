@@ -23,6 +23,7 @@ interface DashboardProps {
     totalTasks: number;
     completedTasks: number;
   };
+  onPlanCreatedAndNavigate: () => void;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({
@@ -34,7 +35,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onTextSubmit,
   onYouTubeSubmit,
   onGenerateActionPlan,
-  analytics
+  analytics,
+  onPlanCreatedAndNavigate
 }) => {
   const [showCreatePlanModal, setShowCreatePlanModal] = useState(false);
 
@@ -88,7 +90,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
         <CreatePlanModal
           contentItems={contentItems}
           onClose={() => setShowCreatePlanModal(false)}
-          onCreatePlan={onGenerateActionPlan}
+          onPlanCreated={(goals) => {
+            onGenerateActionPlan(goals);
+            onPlanCreatedAndNavigate();
+          }}
         />
       )}
     </div>

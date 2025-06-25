@@ -15,28 +15,43 @@ interface ActionPlansProps {
     completionRate: number;
     categoryDistribution: Record<string, number>;
   };
+  rawPlan?: string | null;
 }
 
 export const ActionPlans: React.FC<ActionPlansProps> = ({
-  actionPlans,
+  actionPlans: initialActionPlans,
   contentItems,
   onGenerateActionPlan,
   onStepToggle,
-  analytics
+  analytics,
+  rawPlan
 }) => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<ActionPlan | null>(
-    actionPlans.length > 0 ? actionPlans[0] : null
+    initialActionPlans.length > 0 ? initialActionPlans[0] : null
   );
   const [activeTab, setActiveTab] = useState<'plans' | 'analytics'>('plans');
+  const [actionPlans, setActionPlans] = useState<ActionPlan[]>(initialActionPlans);
 
   const totalTasks = actionPlans.reduce((sum, plan) => sum + plan.steps.length, 0);
   const completedTasks = actionPlans.reduce((sum, plan) => 
     sum + plan.steps.filter(step => step.completed).length, 0
   );
 
+  const handlePlanCreated = (plan: ActionPlan) => {
+    setActionPlans(prev => [...prev, plan]);
+    setSelectedPlan(plan);
+  };
+
   return (
     <div className="space-y-6">
+      {/* Agent Reasoning Output */}
+      {rawPlan && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-6 text-left max-w-3xl mx-auto">
+          <h3 className="text-lg font-semibold text-yellow-800 mb-2">Agent Reasoning / Output</h3>
+          <pre className="whitespace-pre-wrap text-yellow-900 text-sm overflow-x-auto">{rawPlan}</pre>
+        </div>
+      )}
       {/* Header with Tabs */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-6">
@@ -86,7 +101,6 @@ export const ActionPlans: React.FC<ActionPlansProps> = ({
 
       {activeTab === 'plans' ? (
         actionPlans.length === 0 ? (
-          /* Empty State */
           <div className="bg-white border border-gray-200 rounded-2xl p-12 text-center">
             <Target className="h-16 w-16 text-gray-400 mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-black mb-2">No Action Plans Yet</h3>
@@ -284,7 +298,7 @@ export const ActionPlans: React.FC<ActionPlansProps> = ({
         <CreatePlanModal
           contentItems={contentItems}
           onClose={() => setShowCreateModal(false)}
-          onCreatePlan={onGenerateActionPlan}
+          onPlanCreated={handlePlanCreated}
         />
       )}
     </div>

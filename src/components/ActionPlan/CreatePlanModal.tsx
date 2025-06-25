@@ -1,20 +1,24 @@
 import React, { useState } from 'react';
 import { ContentItem } from '../../types';
 import { Plus, X, Target } from 'lucide-react';
+import { usePlanAgent } from '../../hooks/usePlanAgent';
 
 interface CreatePlanModalProps {
   contentItems: ContentItem[];
   onClose: () => void;
-  onCreatePlan: (goals: string[]) => void;
+  onPlanCreated: (goals: string[]) => void;
+  onRawOutput?: (output: any) => void;
 }
 
 export const CreatePlanModal: React.FC<CreatePlanModalProps> = ({
   contentItems,
   onClose,
-  onCreatePlan
+  onPlanCreated,
+  onRawOutput
 }) => {
   const [goals, setGoals] = useState<string[]>([]);
   const [newGoal, setNewGoal] = useState('');
+  const { generatePlan, loading, plan, error, rawOutput } = usePlanAgent();
 
   const handleAddGoal = () => {
     if (newGoal.trim() && !goals.includes(newGoal.trim())) {
@@ -29,10 +33,16 @@ export const CreatePlanModal: React.FC<CreatePlanModalProps> = ({
 
   const handleCreatePlan = () => {
     if (goals.length > 0) {
-      onCreatePlan(goals);
+      onPlanCreated(goals);
       onClose();
     }
   };
+
+  React.useEffect(() => {
+    if (rawOutput && onRawOutput) {
+      onRawOutput(rawOutput);
+    }
+  }, [rawOutput, onRawOutput]);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -85,6 +95,9 @@ export const CreatePlanModal: React.FC<CreatePlanModalProps> = ({
             </div>
           )}
         </div>
+        
+        {loading && <div className="text-center text-blue-600 mb-4">Generating plan...</div>}
+        {error && <div className="text-center text-red-500 mb-4">{error}</div>}
         
         <div className="flex justify-end space-x-3">
           <button
