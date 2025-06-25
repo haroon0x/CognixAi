@@ -29,8 +29,6 @@ runner = Runner(agent=planner_agent, app_name=app_name, session_service=session_
 
 @app.post('/plan')
 async def generate_plan(request: PlanRequest):
-    
-    
     user_id = "frontend_user"  # You can customize this per user/session
     session = await session_service.create_session(app_name=app_name, user_id=user_id)
     content = types.Content(role='user', parts=[types.Part(text=request.text)])

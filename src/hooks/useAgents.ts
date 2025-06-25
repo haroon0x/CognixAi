@@ -93,6 +93,7 @@ export function useAgents() {
         setRawOutput(data);
         if (data && !data.error && data.id && data.title && Array.isArray(data.steps)) {
           setPlan(data);
+          setPlanGenerated(true); // This triggers the notification
           setContentItems(prev => [...prev, {
             id: fileId,
             type: 'text',
@@ -139,25 +140,69 @@ export function useAgents() {
 
         updateUpload(fileId, { status: 'processing', progress: 100 });
 
-        // Create FormData for file upload
-        const formData = new FormData();
-        formData.append('files', file);
-
-        const response = await fetch(`${API_BASE_URL}/upload/files`, {
-          method: 'POST',
-          body: formData,
-        });
-
-        if (response.ok) {
-          const newItems = await response.json();
-          setContentItems(prev => [...prev, ...newItems.map((item: any) => ({
-            ...item,
-            timestamp: new Date(item.timestamp)
-          }))]);
-          updateUpload(fileId, { status: 'completed' });
+        // Mock file processing - extract content
+        let extractedText = '';
+        if (file.type === 'application/pdf') {
+          extractedText = `
+            Project Planning Document
+            
+            Objective: Complete the quarterly marketing campaign
+            
+            Key Components:
+            1. Market research and competitor analysis
+            2. Creative asset development
+            3. Campaign timeline and budget allocation
+            4. Performance metrics and KPIs
+            
+            Resources needed:
+            - Design team collaboration
+            - Budget approval from finance
+            - Content creation timeline
+            - Distribution channel strategy
+          `;
+        } else if (file.type.startsWith('image/')) {
+          extractedText = `
+            Meeting Notes - Project Kickoff
+            Date: December 15, 2024
+            
+            Attendees: Sarah, Mike, Alex, Jennifer
+            
+            Agenda Items:
+            • Project scope and deliverables
+            • Timeline and milestones
+            • Resource allocation
+            • Risk assessment
+            
+            Action Items:
+            1. Sarah - Finalize project requirements by Dec 20
+            2. Mike - Set up development environment
+            3. Alex - Create initial wireframes
+            4. Jennifer - Schedule stakeholder reviews
+            
+            Next Meeting: December 22, 2024
+          `;
         } else {
-          updateUpload(fileId, { status: 'error' });
+          extractedText = await file.text();
         }
+
+        const newItem: ContentItem = {
+          id: fileId,
+          type: file.type === 'application/pdf' ? 'pdf' : file.type.startsWith('image/') ? 'image' : 'text',
+          title: file.name,
+          content: file.name,
+          extractedText,
+          metadata: {
+            fileSize: file.size,
+            lastModified: file.lastModified,
+            mimeType: file.type
+          },
+          timestamp: new Date(),
+          status: 'completed',
+          categories: ['project-management']
+        };
+
+        setContentItems(prev => [...prev, newItem]);
+        updateUpload(fileId, { status: 'completed' });
       } catch (error) {
         console.error('Error processing file:', error);
         updateUpload(fileId, { status: 'error' });
@@ -175,24 +220,46 @@ export function useAgents() {
     try {
       updateUpload(fileId, { status: 'processing', progress: 50 });
 
-      const response = await fetch(`${API_BASE_URL}/upload/youtube`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ url }),
-      });
+      // Mock YouTube transcript extraction
+      const mockTranscript = `
+        Welcome to this tutorial on project management best practices.
+        
+        Today we'll cover:
+        - Setting clear objectives and scope
+        - Building effective team communication
+        - Managing timelines and deadlines
+        - Risk mitigation strategies
+        - Quality assurance processes
+        
+        The first step in any successful project is defining clear, measurable objectives.
+        Without proper goal setting, teams often lose focus and deliverables become unclear.
+        
+        Communication is the backbone of project success. Regular check-ins, status updates,
+        and transparent reporting help keep everyone aligned and accountable.
+        
+        Timeline management requires balancing optimism with realism. Build in buffer time
+        for unexpected challenges while maintaining momentum toward key milestones.
+      `;
 
-      if (response.ok) {
-        const newItem = await response.json();
-        setContentItems(prev => [...prev, {
-          ...newItem,
-          timestamp: new Date(newItem.timestamp)
-        }]);
-        updateUpload(fileId, { status: 'completed', progress: 100 });
-      } else {
-        updateUpload(fileId, { status: 'error' });
-      }
+      const newItem: ContentItem = {
+        id: fileId,
+        type: 'youtube',
+        title: 'Project Management Best Practices',
+        content: url,
+        extractedText: mockTranscript,
+        metadata: {
+          url,
+          duration: '15:32',
+          publishedDate: '2024-12-01',
+          channelName: 'PM Academy'
+        },
+        timestamp: new Date(),
+        status: 'completed',
+        categories: ['project-management']
+      };
+
+      setContentItems(prev => [...prev, newItem]);
+      updateUpload(fileId, { status: 'completed', progress: 100 });
     } catch (error) {
       console.error('Error processing YouTube URL:', error);
       updateUpload(fileId, { status: 'error' });
@@ -202,31 +269,17 @@ export function useAgents() {
   }, [addUpload, updateUpload]);
 
   const toggleActionStep = useCallback(async (planId: string, stepId: string) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/action-plans/${planId}/steps/${stepId}/toggle`, {
-        method: 'PUT',
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        // Remove or comment out the following block, as ContentItem does not have steps
-        // setContentItems(prev => prev.map(item => {
-        //   if (item.id === planId) {
-        //     return {
-        //       ...item,
-        //       steps: item.steps.map(step => 
-        //         step.id === stepId ? { ...step, completed: !step.completed } : step
-        //       )
-        //     };
-        //   }
-        //   return item;
-        // }));
-      } else {
-        // handle error if needed
-      }
-    } catch (error) {
-      // handle error if needed
-    }
+    // Update the plan in state
+    setPlan(prevPlan => {
+      if (!prevPlan || prevPlan.id !== planId) return prevPlan;
+      
+      return {
+        ...prevPlan,
+        steps: prevPlan.steps.map(step => 
+          step.id === stepId ? { ...step, completed: !step.completed } : step
+        )
+      };
+    });
   }, []);
 
   // New functionality
@@ -249,7 +302,7 @@ export function useAgents() {
   const exportData = useCallback(() => {
     const data = {
       contentItems,
-      actionPlans: [],
+      actionPlans: plan ? [plan] : [],
       exportDate: new Date().toISOString()
     };
     
@@ -262,17 +315,17 @@ export function useAgents() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-  }, [contentItems]);
+  }, [contentItems, plan]);
 
   const getAnalytics = useCallback(() => {
     const totalContent = contentItems.length;
     const avgQuality = contentItems.length > 0 
-      ? contentItems.reduce((sum, item) => sum + (item.relevanceScore || 0), 0) / contentItems.length
+      ? contentItems.reduce((sum, item) => sum + (item.relevanceScore || 0.8), 0) / contentItems.length
       : 0;
     
-    const totalTasks = 0;
-    const completedTasks = 0;
-    const completionRate = 0;
+    const totalTasks = plan ? plan.steps.length : 0;
+    const completedTasks = plan ? plan.steps.filter(step => step.completed).length : 0;
+    const completionRate = totalTasks > 0 ? completedTasks / totalTasks : 0;
 
     const categoryDistribution = contentItems.reduce((acc, item) => {
       item.categories.forEach(category => {
@@ -289,7 +342,7 @@ export function useAgents() {
       totalTasks,
       completedTasks
     };
-  }, [contentItems]);
+  }, [contentItems, plan]);
 
   // At the end of the hook, ensure actionPlans is always an array
   const actionPlans = plan ? [plan] : [];
